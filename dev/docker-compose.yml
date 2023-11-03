@@ -1,0 +1,15 @@
+﻿version: "3.4"
+services: 
+  webgpu_dev:
+    image: node:alpine
+    container_name: webgpu_dev
+    entrypoint: /bin/sh
+    ports:
+      - 5173:80
+      - 9229:9229
+    working_dir: /srv/app
+    volumes:
+      - type: bind
+        source: ./../
+        target: /srv/app/
+    tty: true
