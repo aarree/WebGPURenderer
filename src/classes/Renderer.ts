@@ -38,7 +38,7 @@ export default class Renderer {
     this.device = device;
 
     if (!context) {
-      throw new Error("no Webgpu context avail");
+      throw new Error("No Webgpu context available");
     }
 
     this.context = context;
@@ -57,10 +57,6 @@ export default class Renderer {
 
     console.info("Initial renderer Loaded");
     console.groupEnd();
-  }
-  addMesh(mesh: GLTFMesh) {
-    console.info("add mesh:", mesh);
-    this.meshes.push(mesh);
   }
 
   addScene(scene: GLTFScene) {
@@ -124,9 +120,8 @@ export default class Renderer {
   async initRenderer() {
     console.group("Init Renderer");
 
-    const simpleShader = await this.setupShaderModule(simple);
     const normalShader = await this.setupShaderModule(normal);
-    this.shaderModules.set("simple", simpleShader);
+    // this.shaderModules.set("simple", simpleShader);
     this.shaderModules.set("normal", normalShader);
 
     const { dataBuffer, vertexState, fragmentState } = getTriangle(this.device);
@@ -136,8 +131,8 @@ export default class Renderer {
     this.setupCameraProjectionMatrix();
 
     this.renderPipeline = this.createPipeLine(
-      vertexState(simpleShader),
-      fragmentState(simpleShader, this.swapChainFormat),
+      vertexState(normalShader),
+      fragmentState(normalShader, this.swapChainFormat),
       depthFormat,
     );
 
@@ -168,10 +163,7 @@ export default class Renderer {
       mappedAtCreation: true,
     });
 
-    // console.log(upload.getMappedRange());
-
     const map = new Float32Array(upload.getMappedRange());
-    // console.log(map);
     map.set(this.projView);
     upload.unmap();
 
