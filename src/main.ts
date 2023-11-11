@@ -1,15 +1,13 @@
 ﻿import Renderer from "./classes/SRenderer.ts";
-import ArcballCamera from "./classes/ArcballCamera.ts";
-import { InputController } from "./classes/InputController.ts";
-import GLBLoader from "./classes/GLTFLoader/GLBLoader.ts";
 
 // @ts-ignore
-import testScene from "./assets/gltf/test.glb";
-import AvocadoScene from "./assets/gltf/cube.glb";
-import { mat4 } from "gl-matrix";
+// import testScene from "./assets/gltf/test.glb";
+
 import Actor from "./core/Actor.ts";
-import Gpu from "./classes/modules/MGpu.ts";
-import Cube from "./classes/primitives/PCube.ts";
+
+import Material from "./classes/Components/Material.ts";
+
+import Plane from "./classes/primitives/Plane.ts";
 
 const app = document.querySelector("#app");
 
@@ -45,14 +43,46 @@ const initWebGpu = async () => {
 
   const onready = (r: Renderer) => {
     // TODO: Move to renderer
-    Gpu.init(r.device as GPUDevice);
 
-    r.addActor(new Actor(new Cube()));
+    // r.addActor(new Actor(new Cube()));
     console.log(r);
+
+    // const res =
+
+    const mat = new Material({
+      name: "NewMaterial",
+    });
+    //
+    //
+    const plane = new Actor();
+    plane.addComponent("Simple Rectangle", new Plane());
+    plane.addComponent("Material", mat);
+
+    // const cube = new Actor();
+    // cube.addComponent("Simple Cube", new Cube());
+    // cube.addComponent("Material", mat);
+
+    // const cameraActor = new Actor();
+    // cameraActor.addComponent("camera", new Camera(canvas));
+
+    // const gridSize = 4;
+    // const gridRes: Resource<ResourceData> = Resource.create({
+    //   name: "Grid",
+    //   data: new Float32Array([gridSize,gridSize])
+    // })
+
+    console.log(r);
+
+    r.addActor(plane);
+    // r.addActor(cube);
+    // r.addActor(cameraActor);
+    // actor.addComponent("Test", Component);
+
     r.render();
+    canvas.addEventListener("click", () => r.render());
   };
 
-  const r = new Renderer(canvas, onready);
+  new Renderer(canvas, onready);
   // await r.initRenderer();
   // requestAnimationFrame(r.render.bind(r));
 

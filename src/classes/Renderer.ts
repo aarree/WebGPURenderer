@@ -1,5 +1,4 @@
 ﻿// @ts-ignore
-import simple from "../shader/simple.wgsl";
 import normal from "../shader/normal.wgsl";
 
 import { getTriangle } from "../helper/SimpleBuffers.ts";

@@ -1,7 +1,7 @@
 ﻿import Actor from "./Actor.ts";
 
 export default class System {
-  private #actors: Actor[] = [];
+  #actors: Actor[] = [];
 
   get actors(): Actor[] {
     return this.#actors;
