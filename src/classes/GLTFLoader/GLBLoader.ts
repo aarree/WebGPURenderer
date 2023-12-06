@@ -1,15 +1,17 @@
 ﻿import GLTFBuffer from "./GLTFBuffer.ts";
 import GLTFBufferView from "./GLTFBufferView.ts";
 import GLTFAccessor from "./GLTFAccessor.ts";
-import GLTFPrimitive from "./GLTFPrimitive.ts";
 import GLTFMesh from "./GLTFMesh.ts";
-import {
-  flattenTree,
-  GLTFRenderMode,
-  readNodeTransform,
-} from "../../helper/divers.ts";
+import { flattenTree, GLTFRenderMode } from "../../helper/divers.ts";
 import GLTFNode from "./GLTFNode.ts";
 import GLTFScene from "./GLTFScene.ts";
+import Actor from "../../core/Actor.ts";
+import MeshRenderer from "../Components/MeshRenderer.ts";
+import Resource, {
+  ResourceType,
+  ShaderDataFormat,
+  SlotType,
+} from "../../core/Resource.ts";
 
 export default class GLBLoader {
   constructor() {}
@@ -66,6 +68,8 @@ export default class GLBLoader {
     const bufferViews: GLTFBufferView[] = [];
 
     for (let i = 0; i < jsonChunk.bufferViews.length; ++i) {
+      console.log("jsonChunk", jsonChunk);
+
       bufferViews.push(
         new GLTFBufferView(binaryChunk, jsonChunk.bufferViews[i]),
       );
@@ -108,7 +112,8 @@ export default class GLBLoader {
         // Loop through all the attributes to find the POSITION attribute.
         // While we only want the position attribute right now, we'll load
         // the others later as well.
-        let positions = null;
+        let positions: GLTFAccessor = null;
+
         for (let attr in prim["attributes"]) {
           const accessor = accessors[prim["attributes"][attr]];
           if (attr == "POSITION") {
@@ -119,15 +124,62 @@ export default class GLBLoader {
         if (!positions) throw new Error("no positions found");
         if (!indices) throw new Error("no indicies found");
 
-        console.log(positions);
-        console.log(indices);
-        console.log(topology);
+        console.log("positions", positions);
+        console.log("indices", indices);
+        console.log("topology", topology);
 
         // Add the primitive to the mesh's list of primitives
-        meshPrimitives.push(new GLTFPrimitive(positions, indices, topology));
+        // meshPrimitives.push(new GLTFPrimitive(positions, indices, topology));
+        // positions.view.upload(Gpu.module.device);
+        //
+        // const buf = device.createBuffer({
+        //   size: alignTo(this.view.byteLength, 4),
+        //   usage: this.usage,
+        //   mappedAtCreation: true,
+        // });
+
+        console.log(positions);
+
+        const meshRes: Resource = new Resource({
+          type: ResourceType.Triangles,
+          name: mesh["name"],
+          data: positions.view.view,
+          vertexcount: positions.count,
+          indices: indices,
+          stride: positions.byteStride,
+          shaderSlots: [
+            {
+              name: "Position",
+              type: SlotType.position,
+              position: 0,
+              dataType: ShaderDataFormat.vec2f32,
+              size: 3,
+            },
+            {
+              name: "world_pos",
+              type: SlotType.positionOut,
+              position: 1,
+              dataType: ShaderDataFormat.vec2f32,
+              size: 3,
+            },
+            {
+              name: "node_params",
+              type: SlotType.binding,
+              position: 1,
+              size: 4 * 16,
+              dataType: ShaderDataFormat.mat4f32,
+              createNewBuffer: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            },
+          ],
+        });
+
+        const GltfPrimiritve = new Actor();
+        const meshRenderer = new MeshRenderer(meshRes);
+        GltfPrimiritve.addComponent(mesh["name"], meshRenderer);
+        meshes.push(GltfPrimiritve);
       }
 
-      meshes.push(new GLTFMesh(mesh["name"], meshPrimitives));
+      // meshes.push(new GLTFMesh(mesh["name"], meshPrimitives));
     });
 
     // Create the GLTFMesh

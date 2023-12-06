@@ -41,6 +41,8 @@ export default class Shader extends Module {
   }
 
   createShaderModule({ res, code }: { res: Resource; code: string }) {
+    const generatedShaderCode = shaderSlotWrapper(res.data.shaderSlots) + code;
+    console.log(generatedShaderCode);
     const shaderModule = this.device.createShaderModule({
       label: res.data.name,
       code: shaderSlotWrapper(res.data.shaderSlots) + code,

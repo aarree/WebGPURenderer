@@ -1,21 +1,21 @@
-﻿alias float4 = vec4<f32>;
-alias float3 = vec3<f32>;
-
+﻿alias vec3f32 = vec4<f32>;
+alias vec4f32 = vec3<f32>;
+alias mat4f32 = mat4x4<f32>;
 struct VertexInput {
-    @location(0) position: float3,
+    @location(0) position: vec3f32,
 };
 
 struct VertexOutput {
-    @builtin(position) position: float4,
-    @location(0) world_pos: float3,
+    @builtin(position) position: vec4f32,
+    @location(0) world_pos: vec3f32,
 };
 
 struct ViewParams {
-    view_proj: mat4x4<f32>,
+    view_proj: mat4f32,
 };
 
 struct NodeParams {
-    transform: mat4x4<f32>,
+    transform: mat4f32,
 };
 
 @group(0) @binding(0)

@@ -2,7 +2,7 @@
 import GLTFNode from "../classes/GLTFLoader/GLTFNode.ts";
 
 export const alignTo = (val: number, align: number) => {
-  return Math.floor((val + align - 1) / align) * align;
+  return Math.ceil(val / align) * align;
 };
 export const GLTFRenderMode = {
   POINTS: 0,

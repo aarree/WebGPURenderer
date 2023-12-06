@@ -41,6 +41,8 @@ export default class GLTFBufferView {
       this.viewOffset + this.length,
     );
 
+    console.log(this.view.byteLength);
+
     this.needsUpload = false;
     this.gpuBuffer = null;
     this.usage = 0;

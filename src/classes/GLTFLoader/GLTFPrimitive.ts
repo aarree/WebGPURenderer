@@ -40,6 +40,7 @@ export default class GLTFPrimitive {
       offset: 0,
       shaderLocation: 0,
     };
+
     const buffer: GPUVertexBufferLayout = {
       arrayStride: this.positions.byteStride,
       attributes: [
