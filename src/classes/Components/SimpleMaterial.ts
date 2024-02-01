@@ -2,8 +2,8 @@ import Material, { MaterialModel } from "./Material.ts";
 
 export default class SimpleMaterial extends Material {
   constructor({ name, type, color }: MaterialModel) {
-    super({ name, type, color });
-    this.shaderCode = `
+    super({ name, type, color },
+        `
                     // New: define a struct that contains the data we want to pass
                     // through the uniform buffer
                     struct ViewParams {
@@ -25,9 +25,10 @@ export default class SimpleMaterial extends Material {
                     };
                     
                     @fragment
-                    fn fragmentMain(in: VertexOutput) -> @location(0) float4 {
+                    fn fragmentMain(in: VertexOutput) -> @location(0) vec4f32 {
                         return in.frag_position;
                     }
-                `;
+                `
+        );
   }
 }

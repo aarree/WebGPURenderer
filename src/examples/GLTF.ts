@@ -28,11 +28,7 @@ export const initGLTFScene = (r: Renderer) => {
   console.log("gltfMesh:", gltfMeshes);
 
   gltfMeshes.forEach((mesh: Actor) => {
-    console.log(mat);
-    console.log(mesh);
-
     mesh.addComponent("gltfMaterial", mat);
-
     r.addActor(mesh);
   });
 

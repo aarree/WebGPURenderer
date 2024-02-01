@@ -1,6 +1,16 @@
 ﻿import Actor from "./Actor.ts";
 
 export default class System {
+  static all: System[] = [];
+  
+  constructor() {
+    console.group('System');
+    console.log(this.constructor.name ,'System Initialized');
+    console.log('Systemdata:', this);
+    System.all.push(this);
+    console.groupEnd();
+  }
+  
   #actors: Actor[] = [];
 
   get actors(): Actor[] {

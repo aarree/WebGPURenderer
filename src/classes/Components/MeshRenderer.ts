@@ -36,26 +36,25 @@ export default class MeshRenderer extends Component {
       this.resource.data.shaderSlots,
     );
 
-    console.log(this.resource.data);
 
-    if (
-      this.resource.data.indices &&
-      this.resource.data.indices.view.gpuBuffer
-    ) {
-      console.log("render with index");
-      pass.setIndexBuffer(
-        this.resource.data.indices.view.gpuBuffer,
-        this.resource.data.indices.vertexType,
-        this.resource.data.indices.byteOffset,
-        this.resource.data.indices.byteLength,
-      );
-      pass.drawIndexed(this.resource.data.indices.count);
-    } else {
-      console.log("render withou index");
+    // if (
+    //   this.resource.data.indices &&
+    //   this.resource.data.indices.view.gpuBuffer
+    // ) {
+    //   console.log("render with index");
+      // pass.setIndexBuffer(
+      //   this.resource.data.indices.view.gpuBuffer,
+      //   this.resource.data.indices.vertexType,
+      //   this.resource.data.indices.byteOffset,
+      //   this.resource.data.indices.byteLength,
+      // );
+      // pass.drawIndexed(this.resource.data.indices.count);
+    // } else {
+      // Draw without index data
       pass.draw(
         this.resource.data.vertexcount ||
           this.resource.data.data.length / (stride / 4),
       );
-    }
+    // }
   }
 }

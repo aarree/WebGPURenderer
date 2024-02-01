@@ -11,17 +11,18 @@ export enum SlotType {
   binding,
   position,
   positionIn,
-  postionOut,
+  positionOut,
 }
 
 export interface ShaderSlot {
   name: string;
   type: SlotType;
   position: number;
-  dataType: "float2" | "float3" | "float4";
+  dataType: ShaderDataFormat;
   size: number;
   createNewBuffer?: boolean;
   bindGroup?: GPUBindGroup;
+  binding?: number;
 }
 
 export enum ShaderDataFormat {
@@ -55,11 +56,13 @@ export default class Resource {
   data: ResourceData;
 
   constructor(data: ResourceData) {
+    console.group("Resource Init");
     this.data = data;
     console.log("ResourceData", data);
     this.buffer = Gpu.module.createBuffer(data);
 
     console.log("data", data);
+    console.groupEnd();
   }
 
   upload() {}

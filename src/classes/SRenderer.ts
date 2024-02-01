@@ -19,7 +19,6 @@ export default class Renderer extends System {
   device?: GPUDevice;
   canvas: HTMLCanvasElement;
   context: GPUCanvasContext;
-  viewParamsBuffer?: GPUBuffer;
 
   // eslint-disable-next-line no-unused-vars
   #runOnUpdate = new Array<OnUpdateCallback>();
@@ -31,8 +30,40 @@ export default class Renderer extends System {
     super();
     console.group("Renderer");
     console.log("Starting initialization of the WebGPU renderer");
-
     this.canvas = canvas;
+
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const width = entry.devicePixelContentBoxSize?.[0].inlineSize ||
+            entry.contentBoxSize[0].inlineSize * devicePixelRatio;
+        const height = entry.devicePixelContentBoxSize?.[0].blockSize ||
+            entry.contentBoxSize[0].blockSize * devicePixelRatio;
+        const canvas = entry.target as HTMLCanvasElement;
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        // re-render
+      }
+      
+      this.depthTexture = this.device?.createTexture({
+        size: [canvas.width, canvas.height],
+        format: "depth24plus",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      
+      this.activeCamera.updateScreenSize(canvas.width, canvas.height);
+      this.createFrame(() => {});
+
+    });
+    try {
+      observer.observe(canvas, { box: "device-pixel-content-box" });
+    } catch {
+      observer.observe(canvas, { box: "content-box" });
+    }
+
+   
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
 
     const context = canvas.getContext("webgpu");
     if (!context) {
@@ -42,27 +73,29 @@ export default class Renderer extends System {
     this.context = context;
 
     this.activeCamera = new Camera(canvas);
+    console.groupEnd();
 
     this.init().then(() => {
-      this.viewParamsBuffer = this.device?.createBuffer({
-        size: 16 * 4,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      console.group("After render initialization");
 
       this.depthTexture = this.device?.createTexture({
         size: [canvas.width, canvas.height],
         format: "depth24plus",
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
       });
+      
+      console.log("Viewparams & DepthTexture buffer initialized");
 
       const defaultCameraActor = new Actor();
-
+      console.log("Default camera created");
       defaultCameraActor.addComponent("defaultCamera", this.activeCamera);
+      console.log("Default camera attached to camera actor");
       this.addActor(defaultCameraActor);
 
       console.log("WebGPU renderer initialized");
-      cb && cb(this);
       console.groupEnd();
+      
+      cb && cb(this);
     });
   }
 
@@ -71,6 +104,7 @@ export default class Renderer extends System {
   }
 
   async init() {
+    console.group("Initializing WebGPU Renderer");
     if (navigator.gpu === undefined) {
       throw new Error("WebGPU is not supported/enabled in your browser");
     }
@@ -96,25 +130,14 @@ export default class Renderer extends System {
       format: "bgra8unorm",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
-  }
-  
-  setUpViewport(cmd: GPUCommandEncoder) {
-    console.log("setupview", this.activeCamera);
-    if (!this.activeCamera.buffer?.data) return;
-
-    cmd.copyBufferToBuffer(
-      this.activeCamera.updatedCameraProjectionBuffer,
-      0,
-      this.activeCamera.buffer?.data,
-      0,
-      16 * 4,
-    );
+    
+    console.groupEnd()
   }
   
   createFrame(cb: CreateFrameCallback) {
     const encoder = this.device?.createCommandEncoder() as GPUCommandEncoder;
 
-    this.setUpViewport(encoder);
+    this.activeCamera.updatedCameraProjectionBuffer();
 
     const pass = encoder.beginRenderPass({
       colorAttachments: [
@@ -132,12 +155,16 @@ export default class Renderer extends System {
         depthStoreOp: "store",
       },
     });
-
+    // console.log("pass", pass);
+    //
+    // console.group("Render pass update");
     for (let runOnUpdateElement of this.#runOnUpdate) {
       runOnUpdateElement(pass);
     }
-
+    // console.groupEnd();
+    // console.group("Render pass callback");
     cb(pass, encoder);
+    // console.groupEnd();
 
     pass?.end();
 
@@ -146,11 +173,15 @@ export default class Renderer extends System {
   }
 
   render() {
-    this.createFrame((pass) => {
+    // console.group("Render");
+    const frameCallback = (pass: GPURenderPassEncoder) => {
       for (let actor of this.actors) {
         actor.update(pass);
       }
-    });
-    // requestAnimationFrame(this.render.bind(this));
+    }
+    
+    this.createFrame(frameCallback);
+    requestAnimationFrame(this.render.bind(this));
+    // console.groupEnd();
   }
 }

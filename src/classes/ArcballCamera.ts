@@ -9,13 +9,13 @@ export default class ArcballCamera {
   private veye: vec3;
   private vcenter: vec3;
   private vup: vec3;
-  private invScreen: number[];
   private centerTranslation: mat4;
   private translation: mat4;
   private rotation: quat;
   camera: mat4;
   private invCamera: mat4;
   private eye: vec3;
+  screenDimensions = [0, 0];
   constructor(
     eye: vec3,
     private center: vec3,
@@ -48,7 +48,7 @@ export default class ArcballCamera {
     vec3.normalize(xAxis, xAxis);
 
     this.zoomSpeed = zoomSpeed;
-    this.invScreen = [1.0 / screenDims[0], 1.0 / screenDims[1]];
+    this.screenDimensions = screenDims;
     console.log(this.screenDims);
     this.centerTranslation = mat4.fromTranslation(mat4.create(), center);
     mat4.invert(this.centerTranslation, this.centerTranslation);
@@ -74,6 +74,10 @@ export default class ArcballCamera {
     this.camera = mat4.create();
     this.invCamera = mat4.create();
     this.updateCameraMatrix();
+  }
+  
+  private get invScreen() {
+    return [1.0 / this.screenDimensions[0], 1.0 / this.screenDimensions[1]]
   }
 
   rotate(prevMouse: [number, number], curMouse: [number, number]) {

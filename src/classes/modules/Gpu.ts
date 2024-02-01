@@ -25,7 +25,6 @@ export default class Gpu extends Module {
   }
 
   createBuffer({ data, name, type, shaderSlots }: ResourceData): Buffer {
-    console.log("create buffer");
     // filter for slots with position
     const vertexPositionRelevantSlots = shaderSlots.filter(
       (slot) => slot.type === SlotType.position,
@@ -33,7 +32,7 @@ export default class Gpu extends Module {
     const bindGroupRelevantSlots = shaderSlots.filter(
       (slot) => slot.type === SlotType.binding,
     );
-    console.log(data);
+
     // create buffer
     const buffer: Buffer = {
       data: this.device.createBuffer({
@@ -53,6 +52,8 @@ export default class Gpu extends Module {
 
     // create bindgroup for relevant slots
     bindGroupRelevantSlots?.forEach((shaderSlot) => {
+      console.group("create bindgroup for", shaderSlot.name);
+      console.log(shaderSlot);
       if (shaderSlot.createNewBuffer) {
         const buffer: Buffer = {
           data: this.device.createBuffer({
@@ -64,55 +65,48 @@ export default class Gpu extends Module {
           layout: this.createBufferLayout([shaderSlot]),
         };
 
-        new Float32Array(buffer.data.getMappedRange()).set(
-          shaderSlot.createNewBuffer,
-        );
         buffer.data.unmap();
 
-        const bindgroup = this.createBindGroup(buffer);
+        const bindgroup = this.createBindGroup(buffer, shaderSlot.binding);
+        console.log(shaderSlot);
         shaderSlot.bindGroup = bindgroup.bindGroup;
 
-        // shaderBindings.push(bindgroup.bindGroup);
         this.bindGroupLayouts.push(bindgroup.bindGroupLayout);
 
         return;
       }
       shaderSlot.bindGroup = this.createBindGroup(buffer).bindGroup;
-
-      // shaderBindings.push(this.createBindGroup(buffer).bindGroup);
+      console.groupEnd(); 
     });
-
-    // if (shaderBindings.length > 1) {
-    //   throw Error("Only one binding per Buffer is allowed");
-    // }
 
     if (bindGroupRelevantSlots && bindGroupRelevantSlots.length > 0) {
       // Hooking into the renderer and set the bindgroup for the frame
-      this.renderer.onUpdate((pass) => {
-        console.log(bindGroupRelevantSlots);
-        bindGroupRelevantSlots.forEach((slot) => {
-          console.log(slot);
-          console.log("davor");
+      const update = (pass: GPURenderPassEncoder) => {
+        for (let slot of bindGroupRelevantSlots) {
+          if(!slot.bindGroup) {
+            throw new Error(`No bindgroup for slot ${slot}`);
+          }
           pass.setBindGroup(slot.position, slot.bindGroup);
-          console.log("danach");
-        });
-      });
+        }
+      }
+      
+      this.renderer.onUpdate(update);
     }
 
-    console.log(data);
-
+    // @ts-ignore
     new data.constructor(buffer.data.getMappedRange()).set(data);
     buffer.data.unmap();
 
     this.device.queue.writeBuffer(buffer.data, /*bufferOffset=*/ 0, data);
+
     return buffer;
   }
 
-  createBindGroup(buffer: Buffer) {
+  createBindGroup(buffer: Buffer, binding = 0) {
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
-          binding: 0,
+          binding: binding,
           visibility: GPUShaderStage.VERTEX,
           buffer: { type: "uniform" },
         },
@@ -120,7 +114,7 @@ export default class Gpu extends Module {
     });
     const bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
-      entries: [{ binding: 0, resource: { buffer: buffer.data } }],
+      entries: [{ binding: binding, resource: { buffer: buffer.data } }],
     });
 
     return {
@@ -132,21 +126,21 @@ export default class Gpu extends Module {
   private resolveShaderSlots(shaderSlots: ShaderSlot[]): GPUVertexAttribute[] {
     const attributes: GPUVertexAttribute[] = [];
 
-    shaderSlots.forEach((slot) => {
-      if (slot.slotType !== SlotType.positionOut) {
+    shaderSlots.forEach((slot,i) => {
+      if (slot.type !== SlotType.positionOut) {
         attributes.push({
           format: `float32x${slot.size}` as GPUVertexFormat,
-          offset: 0,
+          offset: (i * slot.size) * 4,
           shaderLocation: slot.position,
         });
       }
     });
 
+
     return attributes;
   }
 
   private createBufferLayout(shaderSlots: ShaderSlot[]): GPUVertexBufferLayout {
-    console.log(shaderSlots);
     return {
       arrayStride: this.getVertexArrayStride(shaderSlots),
       attributes: this.resolveShaderSlots(shaderSlots),
@@ -156,14 +150,14 @@ export default class Gpu extends Module {
   getVertexArrayStride(slots: ShaderSlot[]) {
     let stride = 0;
     slots.forEach((slot) => {
-      if (slot.type !== SlotType.postionOut) {
+      if (slot.type !== SlotType.positionOut) {
         stride += slot.size;
       }
     });
-    console.log("Stride", stride);
     return stride * 4;
   }
   private getUsage(type: ResourceType) {
+    // TODO: better usage type handling
     if (type == ResourceType.Triangles) {
       return GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
     }
@@ -210,7 +204,6 @@ export default class Gpu extends Module {
       ],
     });
 
-    console.log("this.bindGroupLayouts", this.bindGroupLayouts);
 
     const layout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout, ...this.bindGroupLayouts],

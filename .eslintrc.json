@@ -8,6 +8,7 @@
   "plugins": ["@typescript-eslint"],
   "parser": "@typescript-eslint/parser",
   "rules": {
+    "object-curly-spacing": ["error", "always"],
     "no-undef": "off",
     "@typescript-eslint/quotes": [
       "error",

@@ -6,6 +6,7 @@ export default class Actor {
   // eslint-disable-next-line no-unused-vars
   #actorUpdateQueue: Array<(pass: GPURenderPassEncoder) => void> = [];
   addComponent(label: string, component: Component) {
+    console.group("add", component.constructor.name ,"Component to", label, "Actor");
     // Check if component already exists
     if (this.#components.has(label))
       throw new Error("Component name already exists");
@@ -13,6 +14,8 @@ export default class Actor {
     for (const [, componentInst] of this.#components) {
       if (componentInst === component) {
         console.warn("Component already exists, component not added");
+        console.groupEnd();
+
         return;
       }
     }
@@ -20,6 +23,7 @@ export default class Actor {
     // Add component
     this.#components.set(label, component);
     component.actor = this;
+    console.groupEnd();
 
     // Check dependencies
     for (const [, componentInst] of this.#components) {
@@ -53,6 +57,6 @@ export default class Actor {
       actorUpdateQueueElement(pass);
     }
 
-    console.log("render");
+    // console.log("render");
   }
 }

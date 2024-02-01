@@ -1,5 +1,6 @@
 ﻿import Resource, {
   ResourceType,
+  ShaderDataFormat,
   ShaderSlot,
   SlotType,
 } from "../../core/Resource.ts";
@@ -43,6 +44,18 @@ export default class Cube extends MeshRenderer {
       type: SlotType.position,
       size: 2,
       position: 2,
+      dataType: ShaderDataFormat.vec2f32,
+    };
+
+    // TODO: create transform uniform buffer according to this binding
+    // @ts-ignore
+    const transformSlot: ShaderSlot = {
+      name: "transform",
+      type: SlotType.binding,
+      size: 4,
+      position: 1,
+      dataType: ShaderDataFormat.vec4f32,
+      binding: 0,
     };
 
     super(
@@ -51,6 +64,7 @@ export default class Cube extends MeshRenderer {
         name: "Cube",
         data,
         shaderSlots: [...shaderDefaultSlots, uvSlot],
+        dataFormat: ShaderDataFormat.vec3f32,
       }),
     );
 

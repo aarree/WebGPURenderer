@@ -1,18 +1,22 @@
 import Module from "../../core/Module.ts";
-import Resource, { ShaderSlot, SlotType } from "../../core/Resource.ts";
-import { shaderSlotWrapper } from "../../shader/DEFAULT_SLOTS";
+import Resource, {ShaderDataFormat, ShaderSlot, SlotType} from "../../core/Resource.ts";
+import {shaderSlotWrapper} from "../../shader/DEFAULT_SLOTS";
+
 export const shaderDefaultSlots: ShaderSlot[] = [
   {
     name: "Position",
     position: 0,
     size: 4,
     type: SlotType.position,
+    dataType: ShaderDataFormat.vec4f32,
   },
   {
     name: "Color",
     position: 1,
     size: 4,
     type: SlotType.position,
+    dataType: ShaderDataFormat.vec4f32,
+
   },
 ];
 
@@ -41,6 +45,8 @@ export default class Shader extends Module {
   }
 
   createShaderModule({ res, code }: { res: Resource; code: string }) {
+    console.group('createShader');
+    console.log(res);
     const generatedShaderCode = shaderSlotWrapper(res.data.shaderSlots) + code;
     console.log(generatedShaderCode);
     const shaderModule = this.device.createShaderModule({
@@ -55,6 +61,7 @@ export default class Shader extends Module {
     }
 
     this.shaders.set(res.data.name, shaderModule);
+    console.groupEnd();
     return shaderModule;
   }
 }

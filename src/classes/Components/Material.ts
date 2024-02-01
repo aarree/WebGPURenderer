@@ -1,6 +1,7 @@
-import Component from "../../core/Component.ts";
+import Component, {Class} from "../../core/Component.ts";
 import Shader from "../modules/Shader.ts";
 import MeshRenderer from "./MeshRenderer.ts";
+import Actor from "../../core/Actor.ts";
 
 export interface MaterialModel {
   name: string;
@@ -27,13 +28,17 @@ export default class Material extends Component {
   #shaderModule?: GPUShaderModule;
   #shaderCode?: string;
 
-  constructor({ name, type, color }: MaterialModel) {
+  constructor({ name, type, color }: MaterialModel, code: string) {
+    console.group("Material Initialization");
     super();
     this.addDependency(MeshRenderer);
     this.name = name;
+    this.#shaderCode = code;
 
     if (type) this.type = type;
     if (color) this.color = color;
+    console.log("Material", this);
+    console.groupEnd();
   }
 
   get shaderModule() {
@@ -42,7 +47,7 @@ export default class Material extends Component {
   }
 
   update(pass: GPURenderPassEncoder) {
-    console.log("shader updated", pass);
+    // Material updated
   }
 
   mesh?: MeshRenderer;
@@ -65,4 +70,6 @@ export default class Material extends Component {
       code: this.shaderCode,
     });
   }
+
+  
 }

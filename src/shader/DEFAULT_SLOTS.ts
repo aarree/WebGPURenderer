@@ -1,5 +1,4 @@
 import {
-  ResourceType,
   ShaderDataFormat,
   ShaderSlot,
   SlotType,
@@ -28,7 +27,7 @@ struct VertexOutput {
     @builtin(position) position: vec4f32,
     ${slots
       .map((slot) =>
-        slot.type === SlotType.positionOut || SlotType.position
+        (slot.type === SlotType.positionOut) || (slot.type == SlotType.position)
           ? `@location(${slot.position}) frag_${slot.name.toLowerCase()}: ${
               ShaderDataFormat[slot.dataType]
             },`

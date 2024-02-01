@@ -10,20 +10,28 @@ export default abstract class Component {
     this.#dependencies.set(component, undefined);
   }
 
-  init() {
+  private async init() {
+    console.group("Initializing", this.constructor.name, "Component");
     console.log(
       "All Dependencies resolved. Initializing:",
       this.constructor.name,
     );
     this.#initialized = true;
-    this.onInit();
+    await this.onInit();
+    console.groupEnd();
   }
 
   checkDependencies() {
-    if (this.#initialized) return;
+    // TODO: simplify this
+    console.group("Checking Dependencies and inititalize Component");
+    if (this.#initialized) {
+      console.groupEnd();
+
+      return;
+    }
 
     let ready = true;
-
+    console.log("check dependencies");
     for (let [requiredDependency] of this.#dependencies) {
       const dependency = this.actor.isComponentAvail(requiredDependency);
 
@@ -35,6 +43,8 @@ export default abstract class Component {
           requiredDependency.name,
         );
         ready = false;
+        
+        console.groupEnd();
         return;
       }
 
@@ -49,13 +59,16 @@ export default abstract class Component {
         this.actor.getComponent(requiredDependency),
       );
     }
-
+    console.log("successfully checked dependencies");
+    console.groupEnd();
+    // TODO: init should be separated from check dependencies
     ready && this.init();
   }
 
   set actor(actor: Actor) {
     this.#actor = actor;
-    actor.onUpdate((p) => this.update(p));
+    const updateActor = (p:  GPURenderPassEncoder) => this.update(p)
+    actor.onUpdate(updateActor);
   }
 
   get actor() {
