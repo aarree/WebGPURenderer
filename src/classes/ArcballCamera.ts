@@ -11,7 +11,7 @@ export default class ArcballCamera {
   private vup: vec3;
   private centerTranslation: mat4;
   private translation: mat4;
-  private rotation: quat;
+  rotation: quat;
   camera: mat4;
   private invCamera: mat4;
   private eye: vec3;
@@ -75,9 +75,9 @@ export default class ArcballCamera {
     this.invCamera = mat4.create();
     this.updateCameraMatrix();
   }
-  
+
   private get invScreen() {
-    return [1.0 / this.screenDimensions[0], 1.0 / this.screenDimensions[1]]
+    return [1.0 / this.screenDimensions[0], 1.0 / this.screenDimensions[1]];
   }
 
   rotate(prevMouse: [number, number], curMouse: [number, number]) {

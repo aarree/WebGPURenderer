@@ -5,10 +5,15 @@ import { shaderDefaultSlots } from "../modules/Shader.ts";
 // This is not a Plane ^^ (but a triangle)
 export default class Plane extends MeshRenderer {
   constructor() {
-    const res = new Resource({
-      name: "Plane",
-      shaderSlots: [...shaderDefaultSlots],
-      data: new Float32Array([
+    // const res = new Resource({
+    //   name: "Plane",
+    //   shaderSlots: [...shaderDefaultSlots],
+    //   data: ,
+    //   type: ResourceType.Triangles,
+    // });
+    super(
+      "plane",
+      new Float32Array([
         1,
         -1,
         0,
@@ -17,6 +22,8 @@ export default class Plane extends MeshRenderer {
         0,
         0,
         1, // color
+        1,
+        1, // uv
 
         -1,
         -1,
@@ -26,6 +33,8 @@ export default class Plane extends MeshRenderer {
         1,
         0,
         1, // color
+        1,
+        1, // uv
 
         0,
         1,
@@ -35,9 +44,9 @@ export default class Plane extends MeshRenderer {
         0,
         1,
         1, // color
+        1,
+        -1, // uv
       ]),
-      type: ResourceType.Triangles,
-    });
-    super(res);
+    );
   }
 }

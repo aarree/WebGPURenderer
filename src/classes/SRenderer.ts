@@ -3,6 +3,16 @@ import Camera from "./Components/Camera.ts";
 import Actor from "../core/Actor.ts";
 import Gpu from "./modules/Gpu.ts";
 import Shader from "./modules/Shader.ts";
+import State from "./modules/State.ts";
+import { defineProxyStore } from "../../../pinata/lib/defineStore";
+
+export const { store, watch } = defineProxyStore("engine", {
+  state: {
+    canvas: { width: 0, height: 0 },
+    actors: [],
+  },
+  actions: {},
+});
 
 // eslint-disable-next-line no-unused-vars
 export type OnUpdateCallback = (n: GPURenderPassEncoder) => void;
@@ -23,47 +33,61 @@ export default class Renderer extends System {
   // eslint-disable-next-line no-unused-vars
   #runOnUpdate = new Array<OnUpdateCallback>();
 
-  activeCamera: Camera;
+  activeCamera!: Camera = {};
   private depthTexture: any;
-
-  constructor(canvas: HTMLCanvasElement, cb: RendererCallback) {
+  state;
+  constructor(canvas: HTMLCanvasElement) {
     super();
     console.group("Renderer");
     console.log("Starting initialization of the WebGPU renderer");
-    this.canvas = canvas;
+    // State.init();
 
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const width = entry.devicePixelContentBoxSize?.[0].inlineSize ||
-            entry.contentBoxSize[0].inlineSize * devicePixelRatio;
-        const height = entry.devicePixelContentBoxSize?.[0].blockSize ||
-            entry.contentBoxSize[0].blockSize * devicePixelRatio;
-        const canvas = entry.target as HTMLCanvasElement;
-        canvas.width = Math.max(1, width);
-        canvas.height = Math.max(1, height);
-        // re-render
-      }
-      
-      this.depthTexture = this.device?.createTexture({
-        size: [canvas.width, canvas.height],
-        format: "depth24plus",
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    // State.module.setStore("engine", {
+    //   state: {
+    //     canvas: { width: 0, height: 0 },
+    //     actors: [],
+    //   },
+    //   actions: {},
+    // });
+    this.state = store.state;
+    this._actors = this.state.actors;
+
+    watch(["canvas"], () => {
+      requestAnimationFrame(() => {
+        canvas.width = this.state.canvas.width;
+        canvas.height = this.state.canvas.height;
+
+        this.depthTexture = this.device?.createTexture({
+          size: [this.state.canvas.width, this.state.canvas.height],
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
       });
-      
-      this.activeCamera.updateScreenSize(canvas.width, canvas.height);
-      this.createFrame(() => {});
-
     });
-    try {
-      observer.observe(canvas, { box: "device-pixel-content-box" });
-    } catch {
-      observer.observe(canvas, { box: "content-box" });
-    }
 
-   
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width =
+          entry.devicePixelContentBoxSize?.[0].inlineSize ||
+          entry.contentBoxSize[0].inlineSize * devicePixelRatio;
+        const height =
+          entry.devicePixelContentBoxSize?.[0].blockSize ||
+          entry.contentBoxSize[0].blockSize * devicePixelRatio;
+
+        this.state.canvas.width = Math.max(1, width);
+        this.state.canvas.height = Math.max(1, height);
+      }
+    });
+
+    try {
+      observer.observe(canvas, {
+        box: "device-pixel-content-box",
+      });
+    } catch {
+      observer.observe(canvas, {
+        box: "content-box",
+      });
+    }
 
     const context = canvas.getContext("webgpu");
     if (!context) {
@@ -72,21 +96,21 @@ export default class Renderer extends System {
 
     this.context = context;
 
-    this.activeCamera = new Camera(canvas);
     console.groupEnd();
 
-    this.init().then(() => {
+    this._ready = this.init().then(() => {
       console.group("After render initialization");
 
       this.depthTexture = this.device?.createTexture({
-        size: [canvas.width, canvas.height],
+        size: [this.state.canvas.width, this.state.canvas.height],
         format: "depth24plus",
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      
-      console.log("Viewparams & DepthTexture buffer initialized");
 
-      const defaultCameraActor = new Actor();
+      console.log("Viewparams & DepthTexture buffer initialized");
+      this.activeCamera = new Camera(canvas);
+
+      const defaultCameraActor = new Actor("Camera");
       console.log("Default camera created");
       defaultCameraActor.addComponent("defaultCamera", this.activeCamera);
       console.log("Default camera attached to camera actor");
@@ -94,8 +118,8 @@ export default class Renderer extends System {
 
       console.log("WebGPU renderer initialized");
       console.groupEnd();
-      
-      cb && cb(this);
+
+      return true;
     });
   }
 
@@ -103,7 +127,7 @@ export default class Renderer extends System {
     this.#runOnUpdate.push(cb);
   }
 
-  async init() {
+  private async init() {
     console.group("Initializing WebGPU Renderer");
     if (navigator.gpu === undefined) {
       throw new Error("WebGPU is not supported/enabled in your browser");
@@ -121,7 +145,7 @@ export default class Renderer extends System {
       throw new Error("no adapter avail");
     }
 
-    // Inititialize BaseModules
+    // Inititialize DeviceModules
     Gpu.init(this.device as GPUDevice, this);
     Shader.init(this.device as GPUDevice);
 
@@ -130,10 +154,10 @@ export default class Renderer extends System {
       format: "bgra8unorm",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
-    
-    console.groupEnd()
+
+    console.groupEnd();
   }
-  
+
   createFrame(cb: CreateFrameCallback) {
     const encoder = this.device?.createCommandEncoder() as GPUCommandEncoder;
 
@@ -145,7 +169,7 @@ export default class Renderer extends System {
           view: this.context.getCurrentTexture().createView(),
           loadOp: "clear",
           storeOp: "store",
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          clearValue: { r: 255, g: 255, b: 255, a: 1 },
         },
       ],
       depthStencilAttachment: {
@@ -175,11 +199,11 @@ export default class Renderer extends System {
   render() {
     // console.group("Render");
     const frameCallback = (pass: GPURenderPassEncoder) => {
-      for (let actor of this.actors) {
+      for (let actor of this.state.actors) {
         actor.update(pass);
       }
-    }
-    
+    };
+
     this.createFrame(frameCallback);
     requestAnimationFrame(this.render.bind(this));
     // console.groupEnd();

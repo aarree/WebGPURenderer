@@ -1,0 +1,36 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Saira:ital,wght@0,100..900;1,100..900&display=swap');
+html,:root, :host {
+  font-size: 10px;
+  font-family: "Inconsolata", monospace;
+}
+
+h1, h2, h3 {
+    font-family: "Saira", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 900;
+    font-style: normal;
+    font-variation-settings:
+            "wdth" 100;
+}
+
+h1 {
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.6rem;
+}
+
+*, p, span, li, a {
+    font-size: 1.4rem;
+    font-family: "Inconsolata", monospace;
+    font-optical-sizing: auto;
+    font-weight: 300;
+    font-style: normal;
+    font-variation-settings:
+            "wdth" 100;
+}

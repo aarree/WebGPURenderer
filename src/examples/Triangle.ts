@@ -3,13 +3,16 @@ import Material from "../classes/Components/Material.ts";
 import Actor from "../core/Actor.ts";
 import Plane from "../classes/primitives/Plane.ts";
 import SimpleMaterial from "../classes/Components/SimpleMaterial.ts";
+import Transform from "../classes/Components/Transform.ts";
 
 export const initTriangleScene = async (r: Renderer) => {
   const mat = new SimpleMaterial({
     name: "TriangleMaterial",
   });
 
-  const plane = new Actor();
+  const plane = new Actor("Plane");
+  plane.addComponent("Transform", new Transform());
+
   plane.addComponent("Simple Rectangle", new Plane());
   plane.addComponent("Material", mat);
 
@@ -18,5 +21,5 @@ export const initTriangleScene = async (r: Renderer) => {
   r.render();
 
   // render next frame ion click instread of animation frame. Easier to debug.
-  r.canvas.addEventListener("click", () => r.render());
+  // r.canvas.addEventListener("click", () => r.render());
 };

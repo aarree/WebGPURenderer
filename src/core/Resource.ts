@@ -1,4 +1,8 @@
-﻿import Gpu from "../classes/modules/Gpu.ts";
+﻿import { vec2, vec3, vec4 } from "gl-matrix";
+import Gpu from "../classes/modules/Gpu.ts";
+import Shader from "../classes/modules/Shader.ts";
+import System from "./System.ts";
+import Renderer from "../classes/SRenderer.ts";
 
 // TODO: Move Type & Interface to separate files or the fitting class files
 export interface Buffer {
@@ -7,22 +11,22 @@ export interface Buffer {
   bindGroup?: GPUBindGroup;
 }
 
-export enum SlotType {
-  binding,
-  position,
-  positionIn,
-  positionOut,
+export enum ShaderGroup {
+  VERTEX,
+  DEFAULT,
+  UPDATEABLE,
+  STATIC,
 }
 
 export interface ShaderSlot {
   name: string;
-  type: SlotType;
   position: number;
   dataType: ShaderDataFormat;
   size: number;
-  createNewBuffer?: boolean;
+  bufferData?: Float32Array | vec2 | vec3 | vec4;
   bindGroup?: GPUBindGroup;
-  binding?: number;
+  bindGroupLayout?: GPUBindGroupLayout;
+  buffer?: GPUBuffer;
 }
 
 export enum ShaderDataFormat {
@@ -32,11 +36,11 @@ export enum ShaderDataFormat {
   vec4f32,
   mat4f32,
 }
-
+// Create Sub resources for geometry, bindings textures etc
 export interface ResourceData {
   type: ResourceType;
   name: string;
-  data: Float32Array;
+  shaderGroup: ShaderGroup;
   shaderSlots: ShaderSlot[];
   dataFormat: ShaderDataFormat;
   vertexcount?: number;
@@ -52,15 +56,50 @@ export enum ResourceType {
 }
 
 export default class Resource {
-  buffer: Buffer;
   data: ResourceData;
-
   constructor(data: ResourceData) {
     console.group("Resource Init");
-    this.data = data;
-    console.log("ResourceData", data);
-    this.buffer = Gpu.module.createBuffer(data);
+    Gpu.module.createResourceBuffer(data.shaderSlots, data.shaderGroup);
 
+    if (data.shaderGroup === ShaderGroup.DEFAULT) {
+      Shader.module.addToShaderDefaults(data.shaderSlots);
+    }
+
+    if (data.shaderGroup === ShaderGroup.VERTEX) {
+      data.bindGroup = Gpu.module.device.createBindGroup({
+        label: data.name + "BindGroup",
+        layout: Gpu.module.device.createBindGroupLayout({
+          entries: data.shaderSlots.map((slot) => {
+            return {
+              buffer: { type: "uniform" },
+              binding: slot.position,
+              visibility: GPUShaderStage.VERTEX,
+            };
+          }),
+        }),
+        entries: data.shaderSlots.map((slot) => {
+          return {
+            binding: slot.position,
+            resource: {
+              buffer: data.shaderSlots[0].buffer,
+              offset: 0,
+              size: 1,
+            },
+          } as GPUBindGroupEntry;
+        }),
+      });
+    }
+    const renderer: Renderer = System.all[0] as Renderer;
+    renderer.onUpdate((pass) => {
+      // console.log("Resource Update", ShaderGroup[data.shaderGroup]);
+      pass.setBindGroup(data.shaderGroup, data.bindGroup);
+    });
+
+    console.log("ResourceData", data);
+    // Gpu.module.createBindGroups(data.shaderSlots);
+    console.log("ResourceData", this);
+
+    this.data = data;
     console.log("data", data);
     console.groupEnd();
   }

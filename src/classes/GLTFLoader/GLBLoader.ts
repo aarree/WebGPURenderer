@@ -173,7 +173,7 @@ export default class GLBLoader {
           ],
         });
 
-        const GltfPrimiritve = new Actor();
+        const GltfPrimiritve = new Actor("GLTF");
         const meshRenderer = new MeshRenderer(meshRes);
         GltfPrimiritve.addComponent(mesh["name"], meshRenderer);
         meshes.push(GltfPrimiritve);

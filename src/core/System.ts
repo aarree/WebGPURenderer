@@ -2,26 +2,33 @@
 
 export default class System {
   static all: System[] = [];
-  
+
   constructor() {
-    console.group('System');
-    console.log(this.constructor.name ,'System Initialized');
-    console.log('Systemdata:', this);
+    console.group("System");
+    console.log(this.constructor.name, "System Initialized");
+    console.log("Systemdata:", this);
     System.all.push(this);
     console.groupEnd();
   }
-  
-  #actors: Actor[] = [];
+
+  private _ready: Promise.IThenable<this>;
+  public get ready(): Promise.IThenable<this> {
+    return this._ready.then(() => {
+      return this;
+    });
+  }
+
+  private _actors: Actor[] = [];
 
   get actors(): Actor[] {
-    return this.#actors;
+    return this._actors;
   }
 
   public addActor(actor: Actor): void {
-    this.#actors.push(actor);
+    this._actors.push(actor);
   }
 
   public removeActor(actor: Actor): void {
-    this.#actors = this.#actors.filter((a) => a !== actor);
+    this._actors = this.actors.filter((a) => a !== actor);
   }
 }

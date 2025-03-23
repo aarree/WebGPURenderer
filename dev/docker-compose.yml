@@ -1,9 +1,10 @@
 ﻿version: "3.4"
-services: 
+services:
   webgpu_dev:
     image: node:alpine
     container_name: webgpu_dev
     entrypoint: /bin/sh
+    user: 1000:1000
     ports:
       - 5173:80
       - 9229:9229
@@ -12,4 +13,7 @@ services:
       - type: bind
         source: ./../
         target: /srv/app/
+      - type: bind
+        source: ./../../pinata/
+        target: /srv/pinata/
     tty: true

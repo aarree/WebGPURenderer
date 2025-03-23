@@ -1,8 +1,11 @@
 ﻿export default abstract class Module {
-  static module: Module;
+  static module: this;
   protected constructor() {}
 
-  static init(...args: any): Module {
-    throw Error("Not Implemented. Args:", args);
+  static init(...args: unknown): Module {
+    if (!this.module) {
+      this.module = new this(...args);
+    }
+    return this.module;
   }
 }

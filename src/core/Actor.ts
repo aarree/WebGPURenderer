@@ -2,16 +2,31 @@
 import { OnUpdateCallback } from "../classes/SRenderer.ts";
 
 export default class Actor {
-  #components = new Map<string, Component>();
+  label: string;
+  private _components;
   // eslint-disable-next-line no-unused-vars
-  #actorUpdateQueue: Array<(pass: GPURenderPassEncoder) => void> = [];
+  private _actorUpdateQueue: Array<(pass: GPURenderPassEncoder) => void> = [];
+
+  constructor(label: string = "Actor") {
+    this.label = label;
+    this._components = new Map<string, Component>();
+  }
   addComponent(label: string, component: Component) {
-    console.group("add", component.constructor.name ,"Component to", label, "Actor");
+    console.group(
+      "add",
+      component.constructor.name,
+      "Component to",
+      label,
+      "Actor",
+    );
+
+    console.log("SET MAP", label);
+
     // Check if component already exists
-    if (this.#components.has(label))
+    if (this._components.has(label))
       throw new Error("Component name already exists");
 
-    for (const [, componentInst] of this.#components) {
+    for (const [, componentInst] of this._components) {
       if (componentInst === component) {
         console.warn("Component already exists, component not added");
         console.groupEnd();
@@ -21,29 +36,29 @@ export default class Actor {
     }
 
     // Add component
-    this.#components.set(label, component);
+    this._components.set(label, component);
     component.actor = this;
     console.groupEnd();
 
     // Check dependencies
-    for (const [, componentInst] of this.#components) {
+    for (const [, componentInst] of this._components) {
       componentInst.checkDependencies();
     }
   }
 
   onUpdate(callback: OnUpdateCallback) {
-    this.#actorUpdateQueue.push(callback);
+    this._actorUpdateQueue.push(callback);
   }
 
   isComponentAvail(module: Class<Component>) {
-    for (const [, component] of this.#components) {
+    for (const [, component] of this._components) {
       if (component instanceof module) return true;
     }
     return false;
   }
 
   getComponent<T>(module: Class<Component>): T {
-    for (const [, component] of this.#components) {
+    for (const [, component] of this._components) {
       if (component instanceof module) return component as T;
     }
 
@@ -53,7 +68,7 @@ export default class Actor {
   }
 
   update(pass: GPURenderPassEncoder) {
-    for (let actorUpdateQueueElement of this.#actorUpdateQueue) {
+    for (let actorUpdateQueueElement of this._actorUpdateQueue) {
       actorUpdateQueueElement(pass);
     }
 

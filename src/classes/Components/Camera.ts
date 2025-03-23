@@ -3,84 +3,118 @@ import ArcballCamera from "../ArcballCamera.ts";
 import { mat4 } from "gl-matrix";
 import { InputController } from "../InputController.ts";
 import Gpu from "../modules/Gpu.ts";
-import { Buffer, ResourceType, ShaderDataFormat, SlotType } from "../../core/Resource.ts";
-
+import Resource, {
+  ResourceType,
+  ShaderDataFormat,
+  ShaderGroup,
+} from "../../core/Resource.ts";
+import State from "../modules/State.ts";
+import { store } from "../SRenderer.ts";
 // Camera is a special component that where at least one instance must be available in the Renderer
 // Because of that one instance will be created by default when the renderer get initialized.
+
 export default class Camera extends Component {
-    private camera: ArcballCamera;
-    private projection: any;
-    
-    projView: any;
-    buffer?: Buffer;
-    constructor(canvas: HTMLCanvasElement) {
-        super();
+  camera: ArcballCamera;
+  // private projection: any;
 
-        this.camera = new ArcballCamera([0, 0, 5], [0, 0, 0], [0, 1, 0],
-            0.5, [canvas.width, canvas.height]);
-        
-        this.camera.rotate([409, 803],[522, 800]);
-        
+  projView: any;
+  resource: Resource;
+  mat4 = mat4.create();
+  engineState = store.state;
+  get projection() {
+    return mat4.perspective(
+      mat4,
+      (50 * Math.PI) / 180.0,
+      this.engineState.canvas.width / this.engineState.canvas.height,
+      0.1,
+      100,
+    );
+  }
+  constructor(canvas: HTMLCanvasElement) {
+    super();
 
-        // Create a perspective projection matrix
-        this.projection = mat4.perspective(mat4.create(), 50 * Math.PI / 180.0,
-            canvas.width / canvas.height, 0.1, 100);
+    this.camera = new ArcballCamera([0, 0, 5], [0, 0, 0], [0, 1, 0], 0.5, [
+      canvas.width,
+      canvas.height,
+    ]);
 
-        // Matrix which will store the computed projection * view matrix
-        this.projView = mat4.create();
+    this.camera.rotate([409, 803], [522, 800]);
 
-        // Controller utility for interacting with the canvas and driving the Arcball camera
-        const controller = new InputController();
-        controller.mousemove = (prev, cur, evt) => {
-            if (evt.buttons == 1) {
-                
-                this.camera.rotate(prev, cur);
+    // Matrix which will store the computed projection * view matrix
+    this.projView = this.mat4;
 
-            } else if (evt.buttons == 2) {
-                this.camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
-            }
-        };
-        controller.wheel = (amt) => { this.camera.zoom(amt * 0.5); };
-        controller.registerForCanvas(canvas);
-        
-    }
-    
-    updateScreenSize(width: number, height: number) {
-        console.log("Updating screen size");
-        this.camera.screenDimensions = [width, height];
-        this.camera.updateCameraMatrix();
-    }
-    onInit(): void {
+    // Controller utility for interacting with the canvas and driving the Arcball camera
+    const controller = new InputController();
+    controller.mousemove = (prev, cur, evt) => {
+      if (evt.buttons == 1) {
+        this.camera.rotate(prev, cur);
+      } else if (evt.buttons == 2) {
+        this.camera.pan([cur[0] - prev[0], prev[1] - cur[1]]);
+      }
+    };
+    controller.wheel = (amt) => {
+      this.camera.zoom(amt * 0.5);
+    };
+    controller.registerForCanvas(canvas);
 
-        this.buffer = Gpu.module.createBuffer({
-            data: this.projView,
-            type: ResourceType.Uniform,
-            name: "Camera ProjView",
-            dataFormat: ShaderDataFormat.mat4f32,
-            shaderSlots: [{
-                name: "projView",
-                size: 4,
-                type: SlotType.binding,
-                position: 0,
-                binding: 0,
-                dataType: ShaderDataFormat.mat4f32
-            }],
-        });
-    }
-    
-    update() {}
+    this.resource = new Resource({
+      type: ResourceType.Uniform,
+      name: "Camera ProjView",
+      dataFormat: ShaderDataFormat.mat4f32,
+      shaderGroup: ShaderGroup.DEFAULT,
+      shaderSlots: [
+        {
+          bufferData: this.projView,
+          name: "view_proj",
+          size: 4,
+          position: 0,
+          dataType: ShaderDataFormat.mat4f32,
+        },
+      ],
+    });
+  }
 
-    updatedCameraProjectionBuffer() {
-        this.projView = mat4.mul(this.projView, this.projection, this.camera.camera);
-        
-        if(!this.buffer?.data) throw new Error("Camera Buffer is null");
+  updateScreenSize(width: number, height: number) {
+    console.log("Updating screen size");
+    this.camera.screenDimensions = [width, height];
+    this.camera.updateCameraMatrix();
+  }
+  onInit(): void {
+    // this.buffer = Gpu.module.createBuffer({
+    //   data: this.projView,
+    //   type: ResourceType.Uniform,
+    //   name: "Camera ProjView",
+    //   dataFormat: ShaderDataFormat.mat4f32,
+    //   shaderSlots: [
+    //     {
+    //       name: "projView",
+    //       size: 4,
+    //       type: SlotType.binding,
+    //       position: 0,
+    //       binding: 0,
+    //       dataType: ShaderDataFormat.mat4f32,
+    //     },
+    //   ],
+    // });
+  }
 
-        Gpu.module.device.queue.writeBuffer(
-            this.buffer.data,
-            0,
-            this.projView.buffer,
-            this.projView.byteOffset,
-            this.projView.byteLength,
-        );
-    }
+  update() {}
+
+  updatedCameraProjectionBuffer() {
+    this.projView = mat4.mul(
+      this.projView,
+      this.projection,
+      this.camera.camera,
+    );
+
+    if (!this.resource.data.shaderSlots[0].buffer)
+      throw new Error("Camera Buffer is null");
+    Gpu.module.device.queue.writeBuffer(
+      this.resource.data.shaderSlots[0].buffer,
+      0,
+      this.projView.buffer,
+      this.projView.byteOffset,
+      this.projView.byteLength,
+    );
+  }
 }
